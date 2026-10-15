@@ -91,6 +91,31 @@ class Strings {
         ),
       };
 
+  String get matchResult => _t('Match result', 'نتيجة المباراة', '試合結果');
+  String get roundsPlayed => _t('Rounds', 'الجولات', 'ラウンド数');
+  String get turns => _t('Turns', 'الأدوار', '手数');
+  String get duration => _t('Time', 'المدة', '時間');
+  String get longestTurn => _t('Longest turn', 'أطول دور', '最長の手');
+  String get groupsCollected =>
+      _t('Groups of four collected', 'مجموعات الأربعة', '獲得した4個の組');
+  String get fromOpponent =>
+      _t('Taken from the opponent', 'من حفر الخصم', '相手の穴から');
+  String get finalStones =>
+      _t('Stones at the end', 'الأحجار في النهاية', '最後の石数');
+  String get roundByRound =>
+      _t('Round by round', 'الجولات بالتفصيل', 'ラウンドごとの記録');
+  String get stonesAfter => _t('Stones after', 'الأحجار بعدها', '終了時の石');
+  String get playAgain => _t('Play again', 'العب مجددًا', 'もう一度遊ぶ');
+  String stonesSown(int count) =>
+      _t('$count stones', 'أحجار: $count', '$count個');
+  String startedBy(String name) =>
+      _t('Started by $name', 'بدأها $name', '$nameが先手');
+  String pairOrder(String first, String second) => _t(
+    'Pairs show $first – $second',
+    'الأرقام بترتيب $first – $second',
+    '数字は $first – $second の順',
+  );
+
   String get howToPlay => _t('How to play', 'طريقة اللعب', '遊び方');
 
   /// Rule sections as (title, points), in the order a new player needs them.

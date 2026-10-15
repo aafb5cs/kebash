@@ -137,6 +137,53 @@ void main() {
     expect(find.text('プレイヤー1の番'), findsOneWidget);
   });
 
+  testWidgets('a finished match opens the result page; closing it goes home', (
+    tester,
+  ) async {
+    await tester.pumpWidget(const KebashApp(initialLocale: Locale('en')));
+    await tester.tap(find.text('Two players'));
+    await tester.pump();
+    await tester.tap(find.text('Start game'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Animation speed'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('No animation').last);
+    await tester.pumpAndSettle();
+
+    // Both players keep tapping the first playable hole until the match ends.
+    final holes = [
+      for (final row in ['A', 'B'])
+        for (var n = 6; n >= 1; n--) '$row$n',
+    ];
+    for (
+      var i = 0;
+      i < 5000 && find.text('Match result').evaluate().isEmpty;
+      i++
+    ) {
+      if (find.text('Continue').evaluate().isNotEmpty) {
+        await tester.tap(find.text('Continue'));
+      } else {
+        for (final hole in holes) {
+          final finder = find.byKey(ValueKey('hole-$hole'));
+          if (finder.evaluate().isEmpty) break;
+          await tester.tap(finder, warnIfMissed: false);
+        }
+      }
+      await tester.pumpAndSettle();
+    }
+
+    expect(find.text('Match result'), findsOneWidget);
+    expect(find.textContaining(' wins'), findsOneWidget);
+    expect(find.text('Rounds'), findsOneWidget);
+    await tester.scrollUntilVisible(find.text('Play again'), 300);
+    expect(find.byType(ListTile), findsWidgets);
+
+    await tester.tap(find.byTooltip('Home'));
+    await tester.pumpAndSettle();
+    expect(find.text('Start game'), findsOneWidget);
+    expect(find.text('Match result'), findsNothing);
+  });
+
   test('the computer replies and a whole match reaches a winner', () async {
     final game = GameController(
       mode: GameMode.vsComputer,
@@ -160,6 +207,22 @@ void main() {
     }
     expect(game.state.winner, isNotNull);
     expect(rounds, greaterThan(0));
+    final stats = game.stats;
+    expect(stats.rounds, hasLength(game.state.roundNumber));
+    expect(stats.rounds.map((r) => r.number), [
+      for (var n = 1; n <= game.state.roundNumber; n++) n,
+    ]);
+    expect(
+      stats.rounds.fold(0, (a, r) => a + r.turns),
+      stats.turns[0] + stats.turns[1],
+    );
+    expect(stats.rounds.last.available.reduce((a, b) => a + b), totalStones);
+    expect(
+      stats.rounds.last.available[game.state.winner!.opponent.index],
+      lessThan(stonesPerHole),
+    );
+    expect(stats.finishedAt, isNotNull);
+    expect(stats.longestTurn, greaterThan(0));
     expect(game.board, everyElement(0));
   });
 }

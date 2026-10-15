@@ -16,6 +16,78 @@ class RoundSummary {
   final Player? winner;
 }
 
+/// One round as it was played. Pairs are indexed by [Player.index].
+class RoundRecord {
+  RoundRecord(this.number, this.starter, this.openHoles);
+
+  final int number;
+  final Player starter;
+  final List<int> openHoles;
+  int turns = 0;
+
+  /// Stones each player had once the round was over.
+  List<int> available = const [0, 0];
+}
+
+/// Running totals for the result page. Pairs are indexed by [Player.index].
+class MatchStats {
+  MatchStats({DateTime Function()? clock})
+    : _clock = clock ?? DateTime.now,
+      startedAt = (clock ?? DateTime.now)();
+
+  final DateTime Function() _clock;
+  final DateTime startedAt;
+  DateTime? finishedAt;
+
+  final rounds = [
+    RoundRecord(1, Player.one, const [holesPerSide, holesPerSide]),
+  ];
+  final turns = [0, 0];
+
+  /// Groups of four each player collected during play, not counting cleanup.
+  final groups = [0, 0];
+
+  /// The part of [groups] taken from the other player's holes.
+  final groupsFromOpponent = [0, 0];
+
+  /// Most stones sown in a single turn, relays included.
+  int longestTurn = 0;
+  Player? longestTurnBy;
+
+  Duration get duration => (finishedAt ?? _clock()).difference(startedAt);
+
+  void record(Player mover, List<GameEvent> events) {
+    turns[mover.index]++;
+    rounds.last.turns++;
+    var sown = 0;
+    for (final event in events) {
+      switch (event) {
+        case Sowed():
+          sown++;
+        case Collected():
+          groups[event.player.index]++;
+          if (ownerOf(event.hole) != event.player) {
+            groupsFromOpponent[event.player.index]++;
+          }
+        case RoundEnded():
+          rounds.last.available = event.available;
+        case RoundStarted():
+          rounds.add(
+            RoundRecord(event.roundNumber, event.starter, event.openHoles),
+          );
+        case MatchEnded():
+          finishedAt = _clock();
+        case PickedUp() || TurnEnded():
+          break;
+      }
+    }
+    if (sown > longestTurn) {
+      longestTurn = sown;
+      longestTurnBy = mover;
+    }
+  }
+}
+
 /// Step delays for the animation speed levels; the last one skips animation.
 const List<Duration> speedDelays = [
   Duration(milliseconds: 600),
@@ -51,6 +123,11 @@ class GameController extends ChangeNotifier {
   /// Called when a round ends; the animation waits for it to complete.
   Future<void> Function(RoundSummary summary)? onRoundEnd;
 
+  /// Called once the last turn of the match has finished animating.
+  VoidCallback? onMatchEnd;
+
+  MatchStats stats = MatchStats();
+
   GameState state = GameState.initial();
   List<int> board = const [];
   List<int> collected = const [];
@@ -60,7 +137,9 @@ class GameController extends ChangeNotifier {
   bool busy = false;
   bool _disposed = false;
 
-  bool isComputer(Player player) =>
+  bool isComputer(Player player) => seatIsComputer(mode, player);
+
+  static bool seatIsComputer(GameMode mode, Player player) =>
       mode == GameMode.vsComputer && player == computerSeat;
 
   /// Holes the person at the device may tap right now.
@@ -75,6 +154,7 @@ class GameController extends ChangeNotifier {
   void restart() {
     if (busy) return;
     state = GameState.initial();
+    stats = MatchStats();
     lastCollection = null;
     _showState();
     notifyListeners();
@@ -85,6 +165,7 @@ class GameController extends ChangeNotifier {
     busy = true;
     lastCollection = null;
     final result = playTurn(state, hole);
+    stats.record(state.currentPlayer, result.events);
 
     for (final event in result.events) {
       switch (event) {
@@ -131,7 +212,11 @@ class GameController extends ChangeNotifier {
     _showState();
     busy = false;
     notifyListeners();
-    unawaited(playComputerTurn());
+    if (state.isFinished) {
+      onMatchEnd?.call();
+    } else {
+      unawaited(playComputerTurn());
+    }
   }
 
   /// Makes the computer's move if it is the computer's turn.

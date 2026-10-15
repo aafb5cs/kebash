@@ -5,6 +5,7 @@ import 'package:kebash_engine/kebash_engine.dart';
 
 import 'game_controller.dart';
 import 'l10n.dart';
+import 'result_screen.dart';
 import 'rules_screen.dart';
 
 const _wood = Color(0xFF8D5A2B);
@@ -22,10 +23,25 @@ class GameScreen extends StatefulWidget {
 }
 
 class _GameScreenState extends State<GameScreen> {
-  late final GameController _game = GameController(
-    mode: widget.mode,
-    difficulty: widget.difficulty,
-  )..onRoundEnd = _showRoundSummary;
+  late final GameController _game =
+      GameController(mode: widget.mode, difficulty: widget.difficulty)
+        ..onRoundEnd = _showRoundSummary
+        ..onMatchEnd = _showResult;
+
+  /// Replaces the game, so closing the result returns to the home screen.
+  void _showResult() {
+    if (!mounted) return;
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute<void>(
+        builder: (_) => ResultScreen(
+          mode: widget.mode,
+          difficulty: widget.difficulty,
+          winner: _game.state.winner!,
+          stats: _game.stats,
+        ),
+      ),
+    );
+  }
 
   @override
   void dispose() {
@@ -37,7 +53,8 @@ class _GameScreenState extends State<GameScreen> {
       _game.isComputer(player) ? s.computer : s.player(player);
 
   Future<void> _showRoundSummary(RoundSummary summary) async {
-    if (!mounted) return;
+    // The last round is covered by the result page.
+    if (!mounted || summary.winner != null) return;
     await showDialog<void>(
       context: context,
       barrierDismissible: false,
