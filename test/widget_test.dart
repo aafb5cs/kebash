@@ -46,7 +46,11 @@ void main() {
     tester.view.physicalSize = const Size(320, 568);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    for (final (code, start) in [('en', 'Start game'), ('ar', 'ابدأ اللعب')]) {
+    for (final (code, start) in [
+      ('en', 'Start game'),
+      ('ar', 'ابدأ اللعب'),
+      ('ja', 'ゲーム開始'),
+    ]) {
       await tester.pumpWidget(
         KebashApp(key: ValueKey(code), initialLocale: Locale(code)),
       );
@@ -55,6 +59,82 @@ void main() {
       // A layout overflow would fail the test here.
       expect(find.byKey(const ValueKey('hole-B6')), findsOneWidget);
     }
+  });
+
+  testWidgets('landscape phone shows the whole board without scrolling', (
+    tester,
+  ) async {
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    for (final size in const [Size(568, 320), Size(844, 390)]) {
+      tester.view.physicalSize = size;
+      for (final (code, start) in [
+        ('en', 'Start game'),
+        ('ar', 'ابدأ اللعب'),
+        ('ja', 'ゲーム開始'),
+      ]) {
+        await tester.pumpWidget(
+          KebashApp(key: UniqueKey(), initialLocale: Locale(code)),
+        );
+        await tester.ensureVisible(find.text(start));
+        await tester.tap(find.text(start));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(AppBar), findsNothing);
+        final screen = Offset.zero & size;
+        for (final hole in ['A1', 'A6', 'B1', 'B6']) {
+          final rect = tester.getRect(find.byKey(ValueKey('hole-$hole')));
+          expect(screen.contains(rect.topLeft), isTrue);
+          expect(screen.contains(rect.bottomRight), isTrue);
+        }
+      }
+    }
+  });
+
+  testWidgets('rules open from home and from the game in both languages', (
+    tester,
+  ) async {
+    for (final (code, howTo, start, goal) in [
+      ('en', 'How to play', 'Start game', 'Goal'),
+      ('ar', 'طريقة اللعب', 'ابدأ اللعب', 'الهدف'),
+      ('ja', '遊び方', 'ゲーム開始', '目的'),
+    ]) {
+      await tester.pumpWidget(
+        KebashApp(key: UniqueKey(), initialLocale: Locale(code)),
+      );
+      await tester.tap(find.text(howTo));
+      await tester.pumpAndSettle();
+      expect(find.text(goal), findsOneWidget);
+      await tester.scrollUntilVisible(find.text('9'), 300);
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text(start));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip(howTo));
+      await tester.pumpAndSettle();
+      expect(find.text(goal), findsOneWidget);
+    }
+  });
+
+  testWidgets('switches to Japanese from the language menu', (tester) async {
+    await tester.pumpWidget(const KebashApp(initialLocale: Locale('en')));
+    await tester.tap(find.byTooltip('Language'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('日本語').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('ケバシュ'), findsOneWidget);
+    await tester.tap(find.text('遊び方'));
+    await tester.pumpAndSettle();
+    expect(find.text('目的'), findsOneWidget);
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('ゲーム開始'));
+    await tester.pumpAndSettle();
+    expect(find.text('ラウンド 1'), findsOneWidget);
+    expect(find.text('プレイヤー1の番'), findsOneWidget);
   });
 
   test('the computer replies and a whole match reaches a winner', () async {

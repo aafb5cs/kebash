@@ -5,6 +5,7 @@ import 'package:kebash_engine/kebash_engine.dart';
 
 import 'game_controller.dart';
 import 'l10n.dart';
+import 'rules_screen.dart';
 
 const _wood = Color(0xFF8D5A2B);
 const _pit = Color(0xFF5C3A1A);
@@ -103,102 +104,190 @@ class _GameScreenState extends State<GameScreen> {
     ),
   );
 
-  @override
-  Widget build(BuildContext context) {
-    final s = Strings.of(context);
-    return ListenableBuilder(
-      listenable: _game,
-      builder: (context, _) {
-        final state = _game.state;
-        final winner = state.winner;
-        final collection = _game.lastCollection;
-        return Scaffold(
-          appBar: AppBar(
-            title: Text(s.round(state.roundNumber)),
-            actions: [
-              PopupMenuButton<int>(
-                tooltip: s.speed,
-                icon: const Icon(Icons.speed),
-                initialValue: _game.speed,
-                onSelected: _game.setSpeed,
-                itemBuilder: (context) => [
-                  for (var i = 0; i < speedDelays.length; i++)
-                    PopupMenuItem(value: i, child: Text(s.speedName(i))),
+  Widget _rulesButton(Strings s) => IconButton(
+    tooltip: s.howToPlay,
+    icon: const Icon(Icons.help_outline),
+    onPressed: () => RulesScreen.open(context),
+  );
+
+  Widget _speedMenu(Strings s) => PopupMenuButton<int>(
+    tooltip: s.speed,
+    icon: const Icon(Icons.speed),
+    initialValue: _game.speed,
+    onSelected: _game.setSpeed,
+    itemBuilder: (context) => [
+      for (var i = 0; i < speedDelays.length; i++)
+        PopupMenuItem(value: i, child: Text(s.speedName(i))),
+    ],
+  );
+
+  /// Whose turn it is or what is in hand, then the latest collection.
+  List<Widget> _status(BuildContext context, Strings s) {
+    final winner = _game.state.winner;
+    final collection = _game.lastCollection;
+    return [
+      Text(
+        winner != null
+            ? s.wins(_name(s, winner))
+            : _game.hand > 0
+            ? '${s.inHand}: ${_game.hand}'
+            : s.turnOf(_name(s, _game.state.currentPlayer)),
+        textAlign: TextAlign.center,
+        style: Theme.of(context).textTheme.titleMedium,
+      ),
+      const SizedBox(height: 4),
+      if (winner != null)
+        TextButton(onPressed: _game.restart, child: Text(s.newGame))
+      else if (collection != null)
+        Text(
+          s.collectedBecause(_name(s, collection.player), collection.reason),
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+    ];
+  }
+
+  Widget _portrait(BuildContext context, Strings s) => Center(
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 640),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          children: [
+            _PlayerPanel(game: _game, player: Player.two),
+            const SizedBox(height: 12),
+            _Board(game: _game),
+            const SizedBox(height: 12),
+            _PlayerPanel(game: _game, player: Player.one),
+            const SizedBox(height: 16),
+            ConstrainedBox(
+              // Keeps the board from jumping as messages come and go.
+              constraints: const BoxConstraints(minHeight: 72),
+              child: Column(children: _status(context, s)),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+
+  /// On a short, wide screen the board takes the full height. Each player's
+  /// panel sits beside their own row, with the controls between them.
+  Widget _landscape(BuildContext context, Strings s) => Padding(
+    padding: const EdgeInsets.all(8),
+    child: Row(
+      children: [
+        SizedBox(
+          width: 168,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _PlayerPanel(game: _game, player: Player.two, compact: true),
+              Column(
+                children: [
+                  Text(
+                    s.round(_game.state.roundNumber),
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      const BackButton(),
+                      _rulesButton(s),
+                      _speedMenu(s),
+                    ],
+                  ),
                 ],
               ),
+              _PlayerPanel(game: _game, player: Player.one, compact: true),
             ],
           ),
-          body: SafeArea(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 640),
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    children: [
-                      _PlayerPanel(game: _game, player: Player.two),
-                      const SizedBox(height: 12),
-                      _Board(game: _game),
-                      const SizedBox(height: 12),
-                      _PlayerPanel(game: _game, player: Player.one),
-                      const SizedBox(height: 16),
-                      ConstrainedBox(
-                        // Keeps the board from jumping as messages come and go.
-                        constraints: const BoxConstraints(minHeight: 72),
-                        child: Column(
-                          children: [
-                            Text(
-                              winner != null
-                                  ? s.wins(_name(s, winner))
-                                  : _game.hand > 0
-                                  ? '${s.inHand}: ${_game.hand}'
-                                  : s.turnOf(_name(s, state.currentPlayer)),
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
-                            const SizedBox(height: 4),
-                            if (winner != null)
-                              TextButton(
-                                onPressed: _game.restart,
-                                child: Text(s.newGame),
-                              )
-                            else if (collection != null)
-                              Text(
-                                s.collectedBecause(
-                                  _name(s, collection.player),
-                                  collection.reason,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                          ],
-                        ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            children: [
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, box) => Center(
+                    child: SizedBox(
+                      width: math.min(
+                        box.maxWidth,
+                        _Board.widthForHeight(box.maxHeight),
                       ),
-                    ],
+                      child: _Board(game: _game),
+                    ),
                   ),
                 ),
               ),
-            ),
+              SizedBox(
+                height: 56,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: _status(context, s),
+                ),
+              ),
+            ],
           ),
-        );
-      },
+        ),
+      ],
+    ),
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    final s = Strings.of(context);
+    final size = MediaQuery.sizeOf(context);
+    final landscape = size.width > size.height && size.height < 500;
+    return ListenableBuilder(
+      listenable: _game,
+      builder: (context, _) => Scaffold(
+        appBar: landscape
+            ? null
+            : AppBar(
+                title: Text(s.round(_game.state.roundNumber)),
+                actions: [_rulesButton(s), _speedMenu(s)],
+              ),
+        body: SafeArea(
+          child: landscape ? _landscape(context, s) : _portrait(context, s),
+        ),
+      ),
     );
   }
 }
 
 class _PlayerPanel extends StatelessWidget {
-  const _PlayerPanel({required this.game, required this.player});
+  const _PlayerPanel({
+    required this.game,
+    required this.player,
+    this.compact = false,
+  });
 
   final GameController game;
   final Player player;
+
+  /// Stacks the three lines for the narrow side column in landscape.
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
     final s = Strings.of(context);
     final theme = Theme.of(context);
     final toMove = !game.state.isFinished && game.state.currentPlayer == player;
+    final lines = [
+      Text(
+        game.isComputer(player) ? s.computer : s.player(player),
+        style: theme.textTheme.titleMedium,
+      ),
+      Text('${s.collected}: ${game.collected[player.index]}'),
+      Text('${s.reserve}: ${game.state.reserve[player.index]}'),
+    ];
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: compact
+          ? const EdgeInsets.symmetric(horizontal: 12, vertical: 6)
+          : const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         color: toMove
             ? theme.colorScheme.primaryContainer
@@ -209,20 +298,25 @@ class _PlayerPanel extends StatelessWidget {
           width: 2,
         ),
       ),
-      child: Wrap(
-        alignment: WrapAlignment.spaceBetween,
-        crossAxisAlignment: WrapCrossAlignment.center,
-        spacing: 16,
-        runSpacing: 4,
-        children: [
-          Text(
-            game.isComputer(player) ? s.computer : s.player(player),
-            style: theme.textTheme.titleMedium,
-          ),
-          Text('${s.collected}: ${game.collected[player.index]}'),
-          Text('${s.reserve}: ${game.state.reserve[player.index]}'),
-        ],
-      ),
+      child: compact
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                for (final line in lines)
+                  DefaultTextStyle.merge(
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    child: line,
+                  ),
+              ],
+            )
+          : Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 16,
+              runSpacing: 4,
+              children: lines,
+            ),
     );
   }
 }
@@ -233,6 +327,15 @@ class _Board extends StatelessWidget {
   const _Board({required this.game});
 
   final GameController game;
+
+  static const double _padding = 8;
+  static const double _middleHeight = 24;
+
+  /// The widest the board can be and still fit in [height].
+  static double widthForHeight(double height) =>
+      (height - 2 * _padding - _middleHeight - 2) / 2 * holesPerSide +
+      2 * _padding +
+      2;
 
   @override
   Widget build(BuildContext context) {
@@ -252,7 +355,7 @@ class _Board extends StatelessWidget {
     return Directionality(
       textDirection: TextDirection.ltr,
       child: Container(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(_padding),
         decoration: BoxDecoration(
           // Lit from the top left, like the pits and stones.
           gradient: const LinearGradient(
@@ -271,10 +374,11 @@ class _Board extends StatelessWidget {
           ],
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             row('B'),
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 2),
+            const SizedBox(
+              height: _middleHeight,
               child: Icon(Icons.rotate_right, color: _stone, size: 20),
             ),
             row('A'),

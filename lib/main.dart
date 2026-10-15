@@ -31,11 +31,7 @@ class _KebashAppState extends State<KebashApp> {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF8D5A2B)),
       ),
       home: HomeScreen(
-        onToggleLanguage: (current) => setState(() {
-          _locale = current.languageCode == 'ar'
-              ? const Locale('en')
-              : const Locale('ar');
-        }),
+        onLanguageChanged: (locale) => setState(() => _locale = locale),
       ),
     );
   }

@@ -4,11 +4,12 @@ import 'package:kebash_engine/kebash_engine.dart';
 import 'game_controller.dart';
 import 'game_screen.dart';
 import 'l10n.dart';
+import 'rules_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, required this.onToggleLanguage});
+  const HomeScreen({super.key, required this.onLanguageChanged});
 
-  final void Function(Locale current) onToggleLanguage;
+  final void Function(Locale locale) onLanguageChanged;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -85,10 +86,41 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  TextButton.icon(
-                    onPressed: () => widget.onToggleLanguage(s.locale),
-                    icon: const Icon(Icons.language),
-                    label: Text(s.otherLanguage),
+                  OutlinedButton.icon(
+                    onPressed: () => RulesScreen.open(context),
+                    icon: const Icon(Icons.menu_book),
+                    label: Text(s.howToPlay),
+                  ),
+                  const SizedBox(height: 12),
+                  Center(
+                    child: PopupMenuButton<Locale>(
+                      tooltip: s.language,
+                      initialValue: s.locale,
+                      onSelected: widget.onLanguageChanged,
+                      itemBuilder: (context) => [
+                        for (final locale in Strings.supportedLocales)
+                          PopupMenuItem(
+                            value: locale,
+                            child: Text(
+                              Strings.languageNames[locale.languageCode]!,
+                            ),
+                          ),
+                      ],
+                      child: Padding(
+                        padding: const EdgeInsets.all(12),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.language),
+                            const SizedBox(width: 8),
+                            Text(
+                              Strings.languageNames[s.locale.languageCode] ??
+                                  Strings.languageNames['en']!,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
