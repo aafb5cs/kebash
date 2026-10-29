@@ -6,3 +6,4 @@ export 'src/board.dart';
 export 'src/engine.dart';
 export 'src/events.dart';
 export 'src/game_state.dart';
+export 'src/replay.dart';
