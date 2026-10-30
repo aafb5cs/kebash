@@ -112,6 +112,7 @@ void main() {
       ('en', 'Start game'),
       ('ar', 'ابدأ اللعب'),
       ('ja', 'ゲーム開始'),
+      ('zh', '开始游戏'),
     ]) {
       await tester.pumpWidget(
         KebashApp(key: ValueKey(code), initialLocale: Locale(code)),
@@ -134,6 +135,7 @@ void main() {
         ('en', 'Start game'),
         ('ar', 'ابدأ اللعب'),
         ('ja', 'ゲーム開始'),
+        ('zh', '开始游戏'),
       ]) {
         await tester.pumpWidget(
           KebashApp(key: UniqueKey(), initialLocale: Locale(code)),
@@ -160,6 +162,7 @@ void main() {
       ('en', 'How to play', 'Start game', 'Goal'),
       ('ar', 'طريقة اللعب', 'ابدأ اللعب', 'الهدف'),
       ('ja', '遊び方', 'ゲーム開始', '目的'),
+      ('zh', '玩法', '开始游戏', '目标'),
     ]) {
       await tester.pumpWidget(
         KebashApp(key: UniqueKey(), initialLocale: Locale(code)),
@@ -197,6 +200,20 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('ラウンド 1'), findsOneWidget);
     expect(find.text('プレイヤー1の番'), findsOneWidget);
+  });
+
+  testWidgets('switches to Chinese from the language menu', (tester) async {
+    await tester.pumpWidget(const KebashApp(initialLocale: Locale('en')));
+    await tester.tap(find.byTooltip('Language'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('中文').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('克巴什'), findsOneWidget);
+    await tester.tap(find.text('开始游戏'));
+    await tester.pumpAndSettle();
+    expect(find.text('第 1 局'), findsOneWidget);
+    expect(find.text('轮到玩家1'), findsOneWidget);
   });
 
   testWidgets('a finished match opens the result page; closing it goes home', (

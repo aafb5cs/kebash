@@ -1,80 +1,99 @@
 import 'package:flutter/widgets.dart';
 import 'package:kebash_engine/kebash_engine.dart';
 
-/// App strings in English, Arabic and Japanese.
+/// App strings in English, Arabic, Japanese and Simplified Chinese.
 class Strings {
   const Strings(this.locale);
 
   final Locale locale;
 
-  static const supportedLocales = [Locale('en'), Locale('ar'), Locale('ja')];
+  static const supportedLocales = [
+    Locale('en'),
+    Locale('ar'),
+    Locale('ja'),
+    Locale('zh'),
+  ];
 
   /// Each language's name, written in that language, for the picker.
-  static const languageNames = {'en': 'English', 'ar': 'العربية', 'ja': '日本語'};
+  static const languageNames = {
+    'en': 'English',
+    'ar': 'العربية',
+    'ja': '日本語',
+    'zh': '中文',
+  };
 
   static Strings of(BuildContext context) =>
       Strings(Localizations.localeOf(context));
 
   /// Picks the text for the current language; English is the fallback.
-  T _t<T>(T en, T ar, T ja) => switch (locale.languageCode) {
+  T _t<T>(T en, T ar, T ja, T zh) => switch (locale.languageCode) {
     'ar' => ar,
     'ja' => ja,
+    'zh' => zh,
     _ => en,
   };
 
-  String get appTitle => _t('Kebash', 'كباش', 'ケバシュ');
-  String get twoPlayers => _t('Two players', 'لاعبان', '2人で対戦');
+  String get appTitle => _t('Kebash', 'كباش', 'ケバシュ', '克巴什');
+  String get twoPlayers => _t('Two players', 'لاعبان', '2人で対戦', '双人对战');
   String get vsComputer =>
-      _t('Against the computer', 'ضد الحاسوب', 'コンピューターと対戦');
-  String get difficulty => _t('Difficulty', 'المستوى', '難易度');
-  String get start => _t('Start game', 'ابدأ اللعب', 'ゲーム開始');
-  String get language => _t('Language', 'اللغة', '言語');
-  String get computer => _t('Computer', 'الحاسوب', 'コンピューター');
-  String get collected => _t('Collected', 'الحصيلة', '獲得');
-  String get reserve => _t('Reserve', 'الاحتياط', '予備');
-  String get inHand => _t('In hand', 'في اليد', '手持ち');
-  String get speed => _t('Animation speed', 'سرعة الحركة', 'アニメーション速度');
-  String get newGame => _t('New game', 'لعبة جديدة', '新しいゲーム');
-  String get continueLabel => _t('Continue', 'متابعة', '続ける');
-  String get home => _t('Home', 'الرئيسية', 'ホーム');
-  String get fromBoard => _t('Taken from board', 'من اللوح', '盤から回収');
-  String get available => _t('Available', 'المتاح', '持ち石');
-  String get openHoles => _t('Open holes', 'الحفر المفتوحة', '開く穴');
+      _t('Against the computer', 'ضد الحاسوب', 'コンピューターと対戦', '人机对战');
+  String get difficulty => _t('Difficulty', 'المستوى', '難易度', '难度');
+  String get start => _t('Start game', 'ابدأ اللعب', 'ゲーム開始', '开始游戏');
+  String get language => _t('Language', 'اللغة', '言語', '语言');
+  String get computer => _t('Computer', 'الحاسوب', 'コンピューター', '电脑');
+  String get collected => _t('Collected', 'الحصيلة', '獲得', '已收集');
+  String get reserve => _t('Reserve', 'الاحتياط', '予備', '备用');
+  String get inHand => _t('In hand', 'في اليد', '手持ち', '手中');
+  String get speed => _t('Animation speed', 'سرعة الحركة', 'アニメーション速度', '动画速度');
+  String get newGame => _t('New game', 'لعبة جديدة', '新しいゲーム', '新游戏');
+  String get continueLabel => _t('Continue', 'متابعة', '続ける', '继续');
+  String get home => _t('Home', 'الرئيسية', 'ホーム', '主页');
+  String get fromBoard => _t('Taken from board', 'من اللوح', '盤から回収', '从棋盘收回');
+  String get available => _t('Available', 'المتاح', '持ち石', '可用石子');
+  String get openHoles => _t('Open holes', 'الحفر المفتوحة', '開く穴', '开放的坑');
 
   String difficultyName(Difficulty level) => switch (level) {
-    Difficulty.easy => _t('Easy', 'سهل', 'かんたん'),
-    Difficulty.medium => _t('Medium', 'متوسط', 'ふつう'),
-    Difficulty.hard => _t('Hard', 'صعب', 'むずかしい'),
-    Difficulty.expert => _t('Expert', 'خبير', 'エキスパート'),
+    Difficulty.easy => _t('Easy', 'سهل', 'かんたん', '简单'),
+    Difficulty.medium => _t('Medium', 'متوسط', 'ふつう', '中等'),
+    Difficulty.hard => _t('Hard', 'صعب', 'むずかしい', '困难'),
+    Difficulty.expert => _t('Expert', 'خبير', 'エキスパート', '专家'),
   };
 
   String speedName(int level) => switch (level) {
-    0 => _t('Slow', 'بطيئة', '遅い'),
-    1 => _t('Normal', 'عادية', '普通'),
-    2 => _t('Fast', 'سريعة', '速い'),
-    _ => _t('No animation', 'بدون حركة', 'アニメーションなし'),
+    0 => _t('Slow', 'بطيئة', '遅い', '慢'),
+    1 => _t('Normal', 'عادية', '普通', '正常'),
+    2 => _t('Fast', 'سريعة', '速い', '快'),
+    _ => _t('No animation', 'بدون حركة', 'アニメーションなし', '无动画'),
   };
 
   String player(Player player) => switch (player) {
-    Player.one => _t('Player 1', 'اللاعب 1', 'プレイヤー1'),
-    Player.two => _t('Player 2', 'اللاعب 2', 'プレイヤー2'),
+    Player.one => _t('Player 1', 'اللاعب 1', 'プレイヤー1', '玩家1'),
+    Player.two => _t('Player 2', 'اللاعب 2', 'プレイヤー2', '玩家2'),
   };
 
   String round(int number) =>
-      _t('Round $number', 'الجولة $number', 'ラウンド $number');
-  String turnOf(String name) => _t('$name to move', 'دور $name', '$nameの番');
-  String roundOver(int number) =>
-      _t('Round $number is over', 'انتهت الجولة $number', 'ラウンド $number 終了');
+      _t('Round $number', 'الجولة $number', 'ラウンド $number', '第 $number 局');
+  String turnOf(String name) =>
+      _t('$name to move', 'دور $name', '$nameの番', '轮到$name');
+  String roundOver(int number) => _t(
+    'Round $number is over',
+    'انتهت الجولة $number',
+    'ラウンド $number 終了',
+    '第 $number 局结束',
+  );
   String starts(String name) => _t(
     '$name starts the next round',
     '$name يبدأ الجولة التالية',
     '次のラウンドは$nameから',
+    '下一局由$name先手',
   );
-  String wins(String name) => _t('$name wins', 'فاز $name', '$nameの勝ち');
+  String wins(String name) =>
+      _t('$name wins', 'فاز $name', '$nameの勝ち', '$name获胜');
   String cannotOpen(String name) => _t(
     '$name does not have four stones to open a hole',
     '$name لا يملك أربعة أحجار لفتح حفرة',
     '$nameは穴を開けるための石が4個ありません',
+    '$name的石子不足四颗，无法开放任何坑',
   );
 
   String collectedBecause(String name, CollectReason reason) =>
@@ -83,37 +102,42 @@ class Strings {
           '$name collects 4: their hole reached four during sowing',
           '$name يجمع 4: اكتملت حفرته أثناء التوزيع',
           '$nameが4個獲得：配っている途中で自分の穴が4個になりました',
+          '$name收集4颗：播种途中自己的坑正好达到四颗',
         ),
         CollectReason.moverFinalStone => _t(
           '$name collects 4 with the last stone',
           '$name يجمع 4 بآخر حجر',
           '$nameが最後の石で4個獲得',
+          '$name用最后一颗石子收集了4颗',
         ),
       };
 
-  String get matchResult => _t('Match result', 'نتيجة المباراة', '試合結果');
-  String get roundsPlayed => _t('Rounds', 'الجولات', 'ラウンド数');
-  String get turns => _t('Turns', 'الأدوار', '手数');
-  String get duration => _t('Time', 'المدة', '時間');
-  String get longestTurn => _t('Longest turn', 'أطول دور', '最長の手');
+  String get matchResult =>
+      _t('Match result', 'نتيجة المباراة', '試合結果', '比赛结果');
+  String get roundsPlayed => _t('Rounds', 'الجولات', 'ラウンド数', '局数');
+  String get turns => _t('Turns', 'الأدوار', '手数', '回合数');
+  String get duration => _t('Time', 'المدة', '時間', '用时');
+  String get longestTurn => _t('Longest turn', 'أطول دور', '最長の手', '最长回合');
   String get groupsCollected =>
-      _t('Groups of four collected', 'مجموعات الأربعة', '獲得した4個の組');
+      _t('Groups of four collected', 'مجموعات الأربعة', '獲得した4個の組', '收集的四颗组数');
   String get fromOpponent =>
-      _t('Taken from the opponent', 'من حفر الخصم', '相手の穴から');
+      _t('Taken from the opponent', 'من حفر الخصم', '相手の穴から', '从对手坑中收集');
   String get finalStones =>
-      _t('Stones at the end', 'الأحجار في النهاية', '最後の石数');
+      _t('Stones at the end', 'الأحجار في النهاية', '最後の石数', '最终石子数');
   String get roundByRound =>
-      _t('Round by round', 'الجولات بالتفصيل', 'ラウンドごとの記録');
-  String get stonesAfter => _t('Stones after', 'الأحجار بعدها', '終了時の石');
-  String get playAgain => _t('Play again', 'العب مجددًا', 'もう一度遊ぶ');
+      _t('Round by round', 'الجولات بالتفصيل', 'ラウンドごとの記録', '逐局记录');
+  String get stonesAfter =>
+      _t('Stones after', 'الأحجار بعدها', '終了時の石', '结束时石子');
+  String get playAgain => _t('Play again', 'العب مجددًا', 'もう一度遊ぶ', '再玩一次');
   String stonesSown(int count) =>
-      _t('$count stones', 'أحجار: $count', '$count個');
+      _t('$count stones', 'أحجار: $count', '$count個', '$count颗');
   String startedBy(String name) =>
-      _t('Started by $name', 'بدأها $name', '$nameが先手');
+      _t('Started by $name', 'بدأها $name', '$nameが先手', '$name先手');
   String pairOrder(String first, String second) => _t(
     'Pairs show $first – $second',
     'الأرقام بترتيب $first – $second',
     '数字は $first – $second の順',
+    '数字顺序为 $first – $second',
   );
 
   String get tutorialTap => _t(
@@ -121,30 +145,35 @@ class Strings {
         'and sow them.',
     'صفّك في الأسفل. اضغط حفرة محاطة بإطار لترفع أحجارها وتوزعها.',
     'あなたの列は下側です。枠のある穴をタップすると、石を取って配ります。',
+    '你的一排在下方。点击带边框的坑，拿起其中的石子并依次播下。',
   );
   String get tutorialCollect => _t(
     'Stones travel clockwise. If your last stone makes exactly four, you '
         'collect them.',
     'تتحرك الأحجار مع عقارب الساعة. إذا جعل آخر حجر الحفرة أربعة، تجمعها أنت.',
     '石は時計回りに進みます。最後の石でちょうど4個になったら、その4個を獲得できます。',
+    '石子按顺时针方向移动。如果你的最后一颗石子使坑中正好有四颗，你就收集这四颗。',
   );
-  String get gotIt => _t('Got it', 'فهمت', 'わかった');
-  String get skip => _t('Skip', 'تخطَّ', 'スキップ');
+  String get gotIt => _t('Got it', 'فهمت', 'わかった', '知道了');
+  String get skip => _t('Skip', 'تخطَّ', 'スキップ', '跳过');
   String get showHintsAgain => _t(
     'Show the first-game hints again',
     'أظهر تلميحات أول لعبة مجددًا',
     '最初のヒントをもう一度表示',
+    '再次显示首局提示',
   );
   String get hintsWillShow => _t(
     'The hints will show in your next game.',
     'ستظهر التلميحات في لعبتك القادمة.',
     '次のゲームでヒントが表示されます。',
+    '下一局游戏将显示提示。',
   );
 
-  String get howToPlay => _t('How to play', 'طريقة اللعب', '遊び方');
+  String get howToPlay => _t('How to play', 'طريقة اللعب', '遊び方', '玩法');
 
   /// Rule sections as (title, points), in the order a new player needs them.
-  List<(String, List<String>)> get rules => _t(_rulesEn, _rulesAr, _rulesJa);
+  List<(String, List<String>)> get rules =>
+      _t(_rulesEn, _rulesAr, _rulesJa, _rulesZh);
 
   static const _rulesEn = [
     (
@@ -355,6 +384,46 @@ class Strings {
         '金色の輪は、いま石が置かれている穴を示します。',
         '石が永遠に回り続ける手は選べないため、その穴は枠で囲まれません。',
       ],
+    ),
+  ];
+
+  static const _rulesZh = [
+    ('目标', ['在某一局开始时让对手的石子少于四颗，使其一个坑都无法开放。']),
+    (
+      '棋盘',
+      [
+        '两排各六个坑。下面一排属于玩家1，上面一排属于玩家2。',
+        '每个坑开始时有四颗石子，因此每位玩家有24颗。',
+        '石子总是按顺时针方向移动，棋盘中间的箭头指示方向。',
+      ],
+    ),
+    (
+      '你的回合',
+      ['点击你这一排中有石子的坑。可以选择的坑带有边框。', '拿起该坑的所有石子，按顺时针方向逐个放入后面的坑中。', '关闭的坑会被跳过。'],
+    ),
+    ('播种途中凑成四颗', ['当你手中还有石子时，如果某个坑正好达到四颗，这四颗归该坑的主人所有，即使那是你的对手。']),
+    (
+      '最后一颗石子落在哪里',
+      [
+        '落入空坑：石子留在坑中，你的回合结束。',
+        '凑成四颗：无论坑属于谁，这四颗都归你，你的回合结束。',
+        '其他数量：拿起该坑中的所有石子继续播种，仍然是你的回合。',
+      ],
+    ),
+    ('一局结束', ['轮到某位玩家时，如果他的一排中没有任何石子，本局结束。', '另一位玩家收走自己一排中剩余的所有石子。']),
+    (
+      '下一局',
+      [
+        '每位玩家用自己拥有的石子填坑，每坑四颗，最多六个坑。',
+        '无法填满的坑从你的左侧开始关闭。剩余的石子作为备用保留。',
+        '关闭的坑在整局中保持关闭，下一局可能重新开放。',
+        '每局由两位玩家轮流先手。',
+      ],
+    ),
+    ('获胜', ['在某一局开始时石子少于四颗的玩家无法开放任何坑，输掉比赛。']),
+    (
+      '屏幕说明',
+      ['坑角上的数字表示坑中石子的数量。', '金色圆环表示当前正在放下石子的坑。', '会让石子无限循环的走法不允许选择，因此该坑不会显示边框。'],
     ),
   ];
 }
