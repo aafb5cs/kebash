@@ -5,8 +5,70 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kebash/game_controller.dart';
 import 'package:kebash/main.dart';
 import 'package:kebash_engine/kebash_engine.dart';
+import 'package:kebash/onboarding.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  // Most tests start from a device that has already seen the first-game hints.
+  setUp(() => SharedPreferences.setMockInitialValues({'tutorialSeen': true}));
+
+  testWidgets('first game shows a tapping hand, then a second tip, once', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    await tester.pumpWidget(const KebashApp(initialLocale: Locale('en')));
+    await tester.tap(find.text('Two players'));
+    await tester.pump();
+    await tester.tap(find.text('Start game'));
+    // The hand animates forever, so pump frames instead of settling.
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump(const Duration(seconds: 1));
+
+    final hint = find.byKey(const ValueKey('tap-hint'));
+    expect(hint, findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('hole-A3')),
+        matching: hint,
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('Tap an outlined hole'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('hole-A3')));
+    await tester.pump(const Duration(seconds: 30));
+    expect(hint, findsNothing);
+    expect(find.textContaining('exactly four'), findsOneWidget);
+
+    await tester.tap(find.text('Got it'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('exactly four'), findsNothing);
+    expect(find.text('Player 2 to move'), findsOneWidget);
+    expect(await Onboarding.isSeen(), isTrue);
+
+    // A new game on the same device shows no hints.
+    await tester.pumpWidget(
+      KebashApp(key: UniqueKey(), initialLocale: const Locale('en')),
+    );
+    await tester.tap(find.text('Start game'));
+    await tester.pumpAndSettle();
+    expect(hint, findsNothing);
+  });
+
+  testWidgets('the rules page can bring the hints back', (tester) async {
+    await tester.pumpWidget(const KebashApp(initialLocale: Locale('en')));
+    await tester.tap(find.text('How to play'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Show the first-game hints again'),
+      300,
+    );
+    await tester.tap(find.text('Show the first-game hints again'));
+    await tester.pumpAndSettle();
+    expect(find.text('The hints will show in your next game.'), findsOneWidget);
+    expect(await Onboarding.isSeen(), isFalse);
+  });
+
   testWidgets('starts a two-player game and plays a tapped hole', (
     tester,
   ) async {

@@ -116,6 +116,31 @@ class Strings {
     '数字は $first – $second の順',
   );
 
+  String get tutorialTap => _t(
+    'Your row is at the bottom. Tap an outlined hole to pick up its stones '
+        'and sow them.',
+    'صفّك في الأسفل. اضغط حفرة محاطة بإطار لترفع أحجارها وتوزعها.',
+    'あなたの列は下側です。枠のある穴をタップすると、石を取って配ります。',
+  );
+  String get tutorialCollect => _t(
+    'Stones travel clockwise. If your last stone makes exactly four, you '
+        'collect them.',
+    'تتحرك الأحجار مع عقارب الساعة. إذا جعل آخر حجر الحفرة أربعة، تجمعها أنت.',
+    '石は時計回りに進みます。最後の石でちょうど4個になったら、その4個を獲得できます。',
+  );
+  String get gotIt => _t('Got it', 'فهمت', 'わかった');
+  String get skip => _t('Skip', 'تخطَّ', 'スキップ');
+  String get showHintsAgain => _t(
+    'Show the first-game hints again',
+    'أظهر تلميحات أول لعبة مجددًا',
+    '最初のヒントをもう一度表示',
+  );
+  String get hintsWillShow => _t(
+    'The hints will show in your next game.',
+    'ستظهر التلميحات في لعبتك القادمة.',
+    '次のゲームでヒントが表示されます。',
+  );
+
   String get howToPlay => _t('How to play', 'طريقة اللعب', '遊び方');
 
   /// Rule sections as (title, points), in the order a new player needs them.

@@ -5,6 +5,7 @@ import 'package:kebash_engine/kebash_engine.dart';
 
 import 'game_controller.dart';
 import 'l10n.dart';
+import 'onboarding.dart';
 import 'result_screen.dart';
 import 'rules_screen.dart';
 
@@ -22,11 +23,50 @@ class GameScreen extends StatefulWidget {
   State<GameScreen> createState() => _GameScreenState();
 }
 
+/// The first-game hints, in the order they appear.
+enum _Tip { none, tapHole, collect }
+
 class _GameScreenState extends State<GameScreen> {
   late final GameController _game =
       GameController(mode: widget.mode, difficulty: widget.difficulty)
         ..onRoundEnd = _showRoundSummary
-        ..onMatchEnd = _showResult;
+        ..onMatchEnd = _showResult
+        ..addListener(_advanceTip);
+
+  _Tip _tip = _Tip.none;
+
+  @override
+  void initState() {
+    super.initState();
+    Onboarding.isSeen().then((seen) {
+      if (!seen && mounted) setState(() => _tip = _Tip.tapHole);
+    });
+  }
+
+  /// Moves on to the second hint once Player 1's first turn has played out.
+  void _advanceTip() {
+    if (_tip == _Tip.tapHole &&
+        !_game.busy &&
+        _game.stats.turns[Player.one.index] > 0) {
+      setState(() => _tip = _Tip.collect);
+    }
+  }
+
+  void _finishTips() {
+    setState(() => _tip = _Tip.none);
+    Onboarding.markSeen();
+  }
+
+  /// The hole the animated hand points at: one Player 1 can play now.
+  int? get _hintHole {
+    if (_tip != _Tip.tapHole) return null;
+    final selectable = _game.selectableHoles;
+    if (selectable.isEmpty || _game.state.currentPlayer != Player.one) {
+      return null;
+    }
+    final preferred = holeIndex('A3');
+    return selectable.contains(preferred) ? preferred : selectable.first;
+  }
 
   /// Replaces the game, so closing the result returns to the home screen.
   void _showResult() {
@@ -140,6 +180,16 @@ class _GameScreenState extends State<GameScreen> {
 
   /// Whose turn it is or what is in hand, then the latest collection.
   List<Widget> _status(BuildContext context, Strings s) {
+    if (_tip != _Tip.none) {
+      final first = _tip == _Tip.tapHole;
+      return [
+        _TipCard(
+          text: first ? s.tutorialTap : s.tutorialCollect,
+          action: first ? s.skip : s.gotIt,
+          onAction: _finishTips,
+        ),
+      ];
+    }
     final winner = _game.state.winner;
     final collection = _game.lastCollection;
     return [
@@ -174,7 +224,7 @@ class _GameScreenState extends State<GameScreen> {
           children: [
             _PlayerPanel(game: _game, player: Player.two),
             const SizedBox(height: 12),
-            _Board(game: _game),
+            _Board(game: _game, hintHole: _hintHole),
             const SizedBox(height: 12),
             _PlayerPanel(game: _game, player: Player.one),
             const SizedBox(height: 16),
@@ -233,14 +283,15 @@ class _GameScreenState extends State<GameScreen> {
                         box.maxWidth,
                         _Board.widthForHeight(box.maxHeight),
                       ),
-                      child: _Board(game: _game),
+                      child: _Board(game: _game, hintHole: _hintHole),
                     ),
                   ),
                 ),
               ),
-              SizedBox(
-                height: 56,
+              ConstrainedBox(
+                constraints: const BoxConstraints(minHeight: 56),
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: _status(context, s),
                 ),
@@ -341,9 +392,12 @@ class _PlayerPanel extends StatelessWidget {
 /// The board keeps its canonical orientation in every language: Player 2's row
 /// on top running B1..B6 left to right, Player 1's row below running A1..A6.
 class _Board extends StatelessWidget {
-  const _Board({required this.game});
+  const _Board({required this.game, this.hintHole});
 
   final GameController game;
+
+  /// Where the first-game hint's hand points, if anywhere.
+  final int? hintHole;
 
   static const double _padding = 8;
   static const double _middleHeight = 24;
@@ -365,6 +419,7 @@ class _Board extends StatelessWidget {
               game: game,
               hole: holeIndex('$letter$n'),
               selectable: selectable.contains(holeIndex('$letter$n')),
+              hint: hintHole == holeIndex('$letter$n'),
             ),
           ),
       ],
@@ -411,11 +466,13 @@ class _Hole extends StatelessWidget {
     required this.game,
     required this.hole,
     required this.selectable,
+    this.hint = false,
   });
 
   final GameController game;
   final int hole;
   final bool selectable;
+  final bool hint;
 
   @override
   Widget build(BuildContext context) {
@@ -434,6 +491,7 @@ class _Hole extends StatelessWidget {
             onTap: selectable ? () => game.play(hole) : null,
             child: Stack(
               fit: StackFit.expand,
+              clipBehavior: Clip.none,
               children: [
                 CustomPaint(
                   painter: _HolePainter(
@@ -452,9 +510,138 @@ class _Hole extends StatelessWidget {
                     alignment: Alignment.topRight,
                     child: _CountBadge(count),
                   ),
+                if (hint) const _TapHint(key: ValueKey('tap-hint')),
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A hand that repeatedly taps the hole, with a ripple at each tap.
+class _TapHint extends StatefulWidget {
+  const _TapHint({super.key});
+
+  @override
+  State<_TapHint> createState() => _TapHintState();
+}
+
+class _TapHintState extends State<_TapHint>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1400),
+  )..repeat();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: LayoutBuilder(
+        builder: (context, box) {
+          final size = box.biggest.shortestSide;
+          final iconSize = size * 0.75;
+          return AnimatedBuilder(
+            animation: _controller,
+            builder: (context, _) {
+              final t = _controller.value;
+              // Approach, press, then rest away from the hole.
+              final approach = Curves.easeOut.transform(
+                (t / 0.4).clamp(0.0, 1.0),
+              );
+              final lift = Curves.easeIn.transform(
+                ((t - 0.6) / 0.4).clamp(0.0, 1.0),
+              );
+              final distance = (1 - approach + lift) * size * 0.25;
+              final pressed = t > 0.4 && t < 0.55;
+              final ripple = ((t - 0.42) / 0.45).clamp(0.0, 1.0);
+              return Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  if (ripple > 0 && ripple < 1)
+                    Center(
+                      child: Container(
+                        width: size * (0.3 + 0.9 * ripple),
+                        height: size * (0.3 + 0.9 * ripple),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.white.withValues(
+                              alpha: 0.9 * (1 - ripple),
+                            ),
+                            width: 3,
+                          ),
+                        ),
+                      ),
+                    ),
+                  // The fingertip of the icon sits near its top middle.
+                  Positioned(
+                    left: size / 2 - iconSize * 0.42 + distance,
+                    top: size / 2 - iconSize * 0.08 + distance,
+                    child: Transform.scale(
+                      scale: pressed ? 0.88 : 1,
+                      child: Icon(
+                        Icons.touch_app,
+                        size: iconSize,
+                        color: Colors.white,
+                        shadows: const [
+                          Shadow(color: Colors.black54, blurRadius: 6),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// A first-game hint shown where the turn status normally is.
+class _TipCard extends StatelessWidget {
+  const _TipCard({
+    required this.text,
+    required this.action,
+    required this.onAction,
+  });
+
+  final String text;
+  final String action;
+  final VoidCallback onAction;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      color: theme.colorScheme.tertiaryContainer,
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsetsDirectional.fromSTEB(12, 8, 4, 8),
+        child: Row(
+          children: [
+            Icon(
+              Icons.lightbulb_outline,
+              color: theme.colorScheme.onTertiaryContainer,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                text,
+                style: TextStyle(color: theme.colorScheme.onTertiaryContainer),
+              ),
+            ),
+            TextButton(onPressed: onAction, child: Text(action)),
+          ],
         ),
       ),
     );

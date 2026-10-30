@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'l10n.dart';
+import 'onboarding.dart';
 
 /// The rules written for players, one card per topic.
 class RulesScreen extends StatelessWidget {
@@ -23,9 +24,22 @@ class RulesScreen extends StatelessWidget {
             constraints: const BoxConstraints(maxWidth: 640),
             child: ListView.separated(
               padding: const EdgeInsets.all(16),
-              itemCount: sections.length,
+              itemCount: sections.length + 1,
               separatorBuilder: (_, _) => const SizedBox(height: 12),
               itemBuilder: (context, i) {
+                if (i == sections.length) {
+                  return TextButton.icon(
+                    onPressed: () async {
+                      await Onboarding.reset();
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(
+                        context,
+                      ).showSnackBar(SnackBar(content: Text(s.hintsWillShow)));
+                    },
+                    icon: const Icon(Icons.replay),
+                    label: Text(s.showHintsAgain),
+                  );
+                }
                 final (title, points) = sections[i];
                 return Card(
                   margin: EdgeInsets.zero,
